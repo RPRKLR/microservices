@@ -4,8 +4,9 @@ Telemetry ingestion and query service for a robot fleet, written in modern C++.
 Ingests high-rate structured telemetry over gRPC, keeps a bounded in-memory
 time-series store, and serves queries over HTTP.
 
-**Status: early skeleton** — config layering, structured JSON logging and clean
-process lifecycle are in place. gRPC ingest is next.
+**Status: in progress** — config layering, structured JSON logging, clean
+process lifecycle and the gRPC streaming ingest path are in place. The
+time-series store is next.
 
 ## Build
 
@@ -32,7 +33,7 @@ loudly at startup and the effective config is logged on boot.
 - [x] Config layering (defaults → file → env) with validation
 - [x] Structured JSON logging
 - [x] Graceful exit on SIGINT/SIGTERM
-- [ ] gRPC client-streaming ingest
+- [x] gRPC client-streaming ingest (with `tools/ingest_client` for manual testing)
 - [ ] In-memory time-series store with bounded retention
 - [ ] HTTP query API
 - [ ] Prometheus metrics, `/healthz` + `/readyz`

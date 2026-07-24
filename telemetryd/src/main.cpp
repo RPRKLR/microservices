@@ -5,9 +5,12 @@
 #include <string>
 #include <thread>
 
+#include <grpcpp/grpcpp.h>
+#include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 
 #include "config.hpp"
+#include "ingest_service.hpp"
 #include "logging.hpp"
 
 namespace {
@@ -44,13 +47,31 @@ int main(int argc, char* argv[]) {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
-    // no servers yet, just prove the process lifecycle
-    spdlog::info("up and idling, send SIGINT/SIGTERM to stop");
+    telemetryd::IngestServiceImpl ingest_service;
+
+    grpc::ServerBuilder builder;
+    const auto addr = fmt::format("0.0.0.0:{}", cfg.grpc_port);
+    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
+    builder.RegisterService(&ingest_service);
+
+    auto server = builder.BuildAndStart();
+    if (!server) {
+        spdlog::error("failed to start gRPC server on {}", addr);
+        return 1;
+    }
+    spdlog::info("gRPC ingest listening on {}", addr);
+
     while (!g_shutdown_requested.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    spdlog::info("shutdown signal received, exiting");
+    spdlog::info("shutdown signal received, draining for up to {}s", cfg.shutdown_drain_seconds);
+    server->Shutdown(std::chrono::system_clock::now() +
+                     std::chrono::seconds(cfg.shutdown_drain_seconds));
+    server->Wait();
+
+    spdlog::info("exiting, lifetime totals: accepted={} rejected={}",
+                 ingest_service.total_accepted(), ingest_service.total_rejected());
     spdlog::shutdown();
     return 0;
 }

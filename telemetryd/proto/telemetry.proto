@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package telemetryd.v1;
+
+// field numbers are forever: never reuse, mark removed ones as reserved
+
+message Sample {
+  string robot_id = 1;
+  string metric = 2;
+  int64 ts_unix_ms = 3;
+  double value = 4;
+}
+
+message TelemetryBatch {
+  repeated Sample samples = 1;
+}
+
+message IngestSummary {
+  uint64 accepted = 1;
+  uint64 rejected = 2;
+}
+
+service TelemetryIngest {
+  // client opens a stream and pushes batches, server replies once at the end
+  rpc StreamTelemetry(stream TelemetryBatch) returns (IngestSummary);
+}

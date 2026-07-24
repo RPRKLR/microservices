@@ -7,17 +7,37 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
+find_package(Protobuf CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
+
+add_library(telemetry_proto proto/telemetry.proto)
+target_link_libraries(telemetry_proto PUBLIC gRPC::grpc++ protobuf::libprotobuf)
+target_include_directories(telemetry_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+protobuf_generate(TARGET telemetry_proto
+    IMPORT_DIRS proto
+    PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
+protobuf_generate(TARGET telemetry_proto
+    LANGUAGE grpc
+    GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+    PLUGIN "protoc-gen-grpc=\$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+    IMPORT_DIRS proto
+    PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(telemetryd
     src/main.cpp
     src/config.cpp
     src/logging.cpp
+    src/ingest_service.cpp
 )
 
 target_link_libraries(telemetryd PRIVATE
+    telemetry_proto
     spdlog::spdlog
     tomlplusplus::tomlplusplus
 )
+
+add_executable(ingest_client tools/ingest_client.cpp)
+target_link_libraries(ingest_client PRIVATE telemetry_proto)
 
 if(MSVC)
     target_compile_options(telemetryd PRIVATE /W4)

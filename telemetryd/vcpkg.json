@@ -2,6 +2,8 @@
   "name": "telemetryd",
   "version": "0.1.0",
   "dependencies": [
+    "grpc",
+    "protobuf",
     "spdlog",
     "tomlplusplus"
   ]
