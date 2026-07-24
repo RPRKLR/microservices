@@ -1,0 +1,14 @@
+# dev defaults, every value can be overridden via env (e.g. TELEMETRYD_HTTP_PORT=9090)
+
+[service]
+name = "telemetryd"
+log_level = "debug"
+
+[server]
+http_port = 8080
+grpc_port = 50051
+shutdown_drain_seconds = 5
+
+[store]
+max_samples_per_series = 10000
+retention_seconds = 3600
