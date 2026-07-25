@@ -16,7 +16,8 @@ grpc::Status IngestServiceImpl::StreamTelemetry(grpc::ServerContext* ctx,
                                                 grpc::ServerReader<v1::TelemetryBatch>* reader,
                                                 v1::IngestSummary* summary) {
     std::uint64_t accepted = 0;
-    std::uint64_t rejected = 0;
+    std::uint64_t invalid = 0;
+    std::uint64_t store_full = 0;
 
     v1::TelemetryBatch batch;
     while (reader->Read(&batch)) {
@@ -25,22 +26,29 @@ grpc::Status IngestServiceImpl::StreamTelemetry(grpc::ServerContext* ctx,
             return grpc::Status::CANCELLED;
         }
         for (const auto& sample : batch.samples()) {
-            if (valid(sample)) {
-                // TODO: hand off to the store (M3), counting only for now
+            if (!valid(sample)) {
+                ++invalid;
+                continue;
+            }
+            const auto result = store_.push(sample.robot_id(), sample.metric(),
+                                            {sample.ts_unix_ms(), sample.value()});
+            if (result == Store::PushResult::ok) {
                 ++accepted;
             } else {
-                ++rejected;
+                ++store_full;
             }
         }
         spdlog::debug("batch from {}: {} samples", ctx->peer(), batch.samples_size());
     }
 
+    const auto rejected = invalid + store_full;
     total_accepted_.fetch_add(accepted);
     total_rejected_.fetch_add(rejected);
 
     summary->set_accepted(accepted);
     summary->set_rejected(rejected);
-    spdlog::info("stream from {} closed: accepted={} rejected={}", ctx->peer(), accepted, rejected);
+    spdlog::info("stream from {} closed: accepted={} invalid={} store_full={}", ctx->peer(),
+                 accepted, invalid, store_full);
     return grpc::Status::OK;
 }
 

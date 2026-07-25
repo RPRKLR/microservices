@@ -3,12 +3,15 @@
 #include <atomic>
 #include <cstdint>
 
+#include "store.hpp"
 #include "telemetry.grpc.pb.h"
 
 namespace telemetryd {
 
 class IngestServiceImpl final : public v1::TelemetryIngest::Service {
 public:
+    explicit IngestServiceImpl(Store& store) : store_(store) {}
+
     grpc::Status StreamTelemetry(grpc::ServerContext* ctx,
                                  grpc::ServerReader<v1::TelemetryBatch>* reader,
                                  v1::IngestSummary* summary) override;
@@ -17,6 +20,7 @@ public:
     std::uint64_t total_rejected() const { return total_rejected_.load(); }
 
 private:
+    Store& store_;
     std::atomic<std::uint64_t> total_accepted_{0};
     std::atomic<std::uint64_t> total_rejected_{0};
 };

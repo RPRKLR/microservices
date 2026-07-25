@@ -5,8 +5,8 @@ Ingests high-rate structured telemetry over gRPC, keeps a bounded in-memory
 time-series store, and serves queries over HTTP.
 
 **Status: in progress** — config layering, structured JSON logging, clean
-process lifecycle and the gRPC streaming ingest path are in place. The
-time-series store is next.
+process lifecycle, gRPC streaming ingest and the bounded in-memory store are
+in place. The HTTP query API is next.
 
 ## Build
 
@@ -34,7 +34,8 @@ loudly at startup and the effective config is logged on boot.
 - [x] Structured JSON logging
 - [x] Graceful exit on SIGINT/SIGTERM
 - [x] gRPC client-streaming ingest (with `tools/ingest_client` for manual testing)
-- [ ] In-memory time-series store with bounded retention
+- [x] In-memory time-series store with bounded retention (ring buffer per
+      series, series-count cap, unit tested)
 - [ ] HTTP query API
 - [ ] Prometheus metrics, `/healthz` + `/readyz`
 - [ ] Dockerfile + docker-compose stack (Prometheus, Grafana)

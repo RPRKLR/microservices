@@ -56,6 +56,7 @@ void apply_file(Config& cfg, const std::string& path) {
 
     cfg.store_max_samples_per_series =
         tbl["store"]["max_samples_per_series"].value_or(cfg.store_max_samples_per_series);
+    cfg.store_max_series = tbl["store"]["max_series"].value_or(cfg.store_max_series);
     cfg.store_retention_seconds =
         tbl["store"]["retention_seconds"].value_or(cfg.store_retention_seconds);
 }
@@ -77,6 +78,9 @@ void apply_env(Config& cfg) {
         cfg.store_max_samples_per_series =
             parse_int(*v, "TELEMETRYD_STORE_MAX_SAMPLES_PER_SERIES");
     }
+    if (auto v = get_env("TELEMETRYD_STORE_MAX_SERIES")) {
+        cfg.store_max_series = parse_int(*v, "TELEMETRYD_STORE_MAX_SERIES");
+    }
     if (auto v = get_env("TELEMETRYD_STORE_RETENTION_SECONDS")) {
         cfg.store_retention_seconds = parse_int(*v, "TELEMETRYD_STORE_RETENTION_SECONDS");
     }
@@ -94,6 +98,9 @@ void validate(const Config& cfg) {
     }
     if (cfg.store_max_samples_per_series <= 0) {
         throw std::runtime_error("store.max_samples_per_series must be positive");
+    }
+    if (cfg.store_max_series <= 0) {
+        throw std::runtime_error("store.max_series must be positive");
     }
     if (cfg.store_retention_seconds <= 0) {
         throw std::runtime_error("store.retention_seconds must be positive");
@@ -120,9 +127,10 @@ Config load_config(const std::string& file_path) {
 std::string to_string(const Config& cfg) {
     return fmt::format(
         "service_name={} log_level={} http_port={} grpc_port={} "
-        "store_max_samples_per_series={} store_retention_seconds={} shutdown_drain_seconds={}",
+        "store_max_samples_per_series={} store_max_series={} store_retention_seconds={} "
+        "shutdown_drain_seconds={}",
         cfg.service_name, cfg.log_level, cfg.http_port, cfg.grpc_port,
-        cfg.store_max_samples_per_series, cfg.store_retention_seconds,
+        cfg.store_max_samples_per_series, cfg.store_max_series, cfg.store_retention_seconds,
         cfg.shutdown_drain_seconds);
 }
 

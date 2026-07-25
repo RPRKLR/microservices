@@ -9,6 +9,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 
 add_library(telemetry_proto proto/telemetry.proto)
 target_link_libraries(telemetry_proto PUBLIC gRPC::grpc++ protobuf::libprotobuf)
@@ -28,6 +29,7 @@ add_executable(telemetryd
     src/config.cpp
     src/logging.cpp
     src/ingest_service.cpp
+    src/store.cpp
 )
 
 target_link_libraries(telemetryd PRIVATE
@@ -38,6 +40,22 @@ target_link_libraries(telemetryd PRIVATE
 
 add_executable(ingest_client tools/ingest_client.cpp)
 target_link_libraries(ingest_client PRIVATE telemetry_proto)
+
+enable_testing()
+add_executable(unit_tests
+    tests/store_test.cpp
+    tests/config_test.cpp
+    src/store.cpp
+    src/config.cpp
+)
+target_include_directories(unit_tests PRIVATE src)
+target_link_libraries(unit_tests PRIVATE
+    GTest::gtest_main
+    spdlog::spdlog
+    tomlplusplus::tomlplusplus
+)
+include(GoogleTest)
+gtest_discover_tests(unit_tests)
 
 if(MSVC)
     target_compile_options(telemetryd PRIVATE /W4)

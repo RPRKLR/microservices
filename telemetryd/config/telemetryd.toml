@@ -11,4 +11,5 @@ shutdown_drain_seconds = 5
 
 [store]
 max_samples_per_series = 10000
+max_series = 10000
 retention_seconds = 3600

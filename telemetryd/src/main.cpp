@@ -12,6 +12,7 @@
 #include "config.hpp"
 #include "ingest_service.hpp"
 #include "logging.hpp"
+#include "store.hpp"
 
 namespace {
 
@@ -47,7 +48,10 @@ int main(int argc, char* argv[]) {
     std::signal(SIGINT, handle_signal);
     std::signal(SIGTERM, handle_signal);
 
-    telemetryd::IngestServiceImpl ingest_service;
+    telemetryd::Store store({static_cast<std::size_t>(cfg.store_max_series),
+                             static_cast<std::size_t>(cfg.store_max_samples_per_series),
+                             cfg.store_retention_seconds * 1000});
+    telemetryd::IngestServiceImpl ingest_service(store);
 
     grpc::ServerBuilder builder;
     const auto addr = fmt::format("0.0.0.0:{}", cfg.grpc_port);
@@ -70,8 +74,9 @@ int main(int argc, char* argv[]) {
                      std::chrono::seconds(cfg.shutdown_drain_seconds));
     server->Wait();
 
-    spdlog::info("exiting, lifetime totals: accepted={} rejected={}",
-                 ingest_service.total_accepted(), ingest_service.total_rejected());
+    spdlog::info("exiting, lifetime totals: accepted={} rejected={} series={}",
+                 ingest_service.total_accepted(), ingest_service.total_rejected(),
+                 store.series_count());
     spdlog::shutdown();
     return 0;
 }

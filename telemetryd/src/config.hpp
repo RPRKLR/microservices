@@ -13,6 +13,7 @@ struct Config {
     std::uint16_t grpc_port = 50051;
 
     std::int64_t store_max_samples_per_series = 10000;
+    std::int64_t store_max_series = 10000;
     std::int64_t store_retention_seconds = 3600;
 
     std::int64_t shutdown_drain_seconds = 5;
