@@ -10,6 +10,7 @@ find_package(tomlplusplus CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
+find_package(Crow CONFIG REQUIRED)
 
 add_library(telemetry_proto proto/telemetry.proto)
 target_link_libraries(telemetry_proto PUBLIC gRPC::grpc++ protobuf::libprotobuf)
@@ -30,10 +31,12 @@ add_executable(telemetryd
     src/logging.cpp
     src/ingest_service.cpp
     src/store.cpp
+    src/http_server.cpp
 )
 
 target_link_libraries(telemetryd PRIVATE
     telemetry_proto
+    Crow::Crow
     spdlog::spdlog
     tomlplusplus::tomlplusplus
 )

@@ -55,4 +55,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Series>> series_;
 };
 
+// equal-count buckets, mean ts and value per bucket; passthrough if small enough
+std::vector<SamplePoint> downsample(const std::vector<SamplePoint>& in, std::size_t max_points);
+
 } // namespace telemetryd

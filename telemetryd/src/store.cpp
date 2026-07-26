@@ -79,4 +79,32 @@ std::size_t Store::series_count() const {
     return series_.size();
 }
 
+std::vector<SamplePoint> downsample(const std::vector<SamplePoint>& in, std::size_t max_points) {
+    if (max_points == 0 || in.size() <= max_points) {
+        return in;
+    }
+
+    std::vector<SamplePoint> out;
+    out.reserve(max_points);
+    const double stride = static_cast<double>(in.size()) / static_cast<double>(max_points);
+
+    for (std::size_t b = 0; b < max_points; ++b) {
+        auto begin = static_cast<std::size_t>(static_cast<double>(b) * stride);
+        auto end = std::min(in.size(), static_cast<std::size_t>(static_cast<double>(b + 1) * stride));
+        if (end <= begin) {
+            end = begin + 1;
+        }
+
+        double ts_sum = 0.0;
+        double value_sum = 0.0;
+        for (std::size_t i = begin; i < end; ++i) {
+            ts_sum += static_cast<double>(in[i].ts_unix_ms);
+            value_sum += in[i].value;
+        }
+        const auto n = static_cast<double>(end - begin);
+        out.push_back({static_cast<std::int64_t>(ts_sum / n), value_sum / n});
+    }
+    return out;
+}
+
 } // namespace telemetryd

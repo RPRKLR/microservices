@@ -69,6 +69,26 @@ TEST(StoreTest, SeriesLimitRejectsNewSeries) {
     EXPECT_EQ(store.series_count(), 2u);
 }
 
+TEST(DownsampleTest, PassthroughWhenSmallEnough) {
+    const std::vector<SamplePoint> in = {{1, 1.0}, {2, 2.0}};
+    EXPECT_EQ(telemetryd::downsample(in, 5).size(), 2u);
+    EXPECT_EQ(telemetryd::downsample(in, 0).size(), 2u);
+}
+
+TEST(DownsampleTest, ReducesToMaxPointsWithBucketMeans) {
+    std::vector<SamplePoint> in;
+    for (std::int64_t i = 0; i < 10; ++i) {
+        in.push_back({i * 10, static_cast<double>(i)});
+    }
+
+    const auto out = telemetryd::downsample(in, 2);
+    ASSERT_EQ(out.size(), 2u);
+    EXPECT_EQ(out[0].ts_unix_ms, 20);
+    EXPECT_DOUBLE_EQ(out[0].value, 2.0);
+    EXPECT_EQ(out[1].ts_unix_ms, 70);
+    EXPECT_DOUBLE_EQ(out[1].value, 7.0);
+}
+
 TEST(StoreTest, SeriesAreIndependent) {
     auto store = make_store();
     store.push("r1", "temp", {100, 1.0});

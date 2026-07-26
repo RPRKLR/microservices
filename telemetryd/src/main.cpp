@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "config.hpp"
+#include "http_server.hpp"
 #include "ingest_service.hpp"
 #include "logging.hpp"
 #include "store.hpp"
@@ -65,14 +66,23 @@ int main(int argc, char* argv[]) {
     }
     spdlog::info("gRPC ingest listening on {}", addr);
 
+    std::atomic<bool> ready{false};
+    telemetryd::HttpServer http_server(cfg.http_port, store, ready);
+    http_server.start();
+    ready.store(true);
+
     while (!g_shutdown_requested.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    spdlog::info("shutdown signal received, draining for up to {}s", cfg.shutdown_drain_seconds);
-    server->Shutdown(std::chrono::system_clock::now() +
-                     std::chrono::seconds(cfg.shutdown_drain_seconds));
+    // drain sequence: readyz -> 503, wait for LB to notice, then stop servers
+    spdlog::info("shutdown signal received, draining for {}s", cfg.shutdown_drain_seconds);
+    ready.store(false);
+    std::this_thread::sleep_for(std::chrono::seconds(cfg.shutdown_drain_seconds));
+
+    server->Shutdown(std::chrono::system_clock::now() + std::chrono::seconds(5));
     server->Wait();
+    http_server.stop();
 
     spdlog::info("exiting, lifetime totals: accepted={} rejected={} series={}",
                  ingest_service.total_accepted(), ingest_service.total_rejected(),
