@@ -1,5 +1,7 @@
 #include "ingest_service.hpp"
 
+#include <chrono>
+
 #include <spdlog/spdlog.h>
 
 namespace telemetryd {
@@ -15,6 +17,7 @@ bool valid(const v1::Sample& s) {
 grpc::Status IngestServiceImpl::StreamTelemetry(grpc::ServerContext* ctx,
                                                 grpc::ServerReader<v1::TelemetryBatch>* reader,
                                                 v1::IngestSummary* summary) {
+    const auto t0 = std::chrono::steady_clock::now();
     std::uint64_t accepted = 0;
     std::uint64_t invalid = 0;
     std::uint64_t store_full = 0;
@@ -44,6 +47,12 @@ grpc::Status IngestServiceImpl::StreamTelemetry(grpc::ServerContext* ctx,
     const auto rejected = invalid + store_full;
     total_accepted_.fetch_add(accepted);
     total_rejected_.fetch_add(rejected);
+
+    metrics_.count_samples("accepted", static_cast<double>(accepted));
+    metrics_.count_samples("invalid", static_cast<double>(invalid));
+    metrics_.count_samples("store_full", static_cast<double>(store_full));
+    metrics_.count_ingest_stream(
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 
     summary->set_accepted(accepted);
     summary->set_rejected(rejected);

@@ -5,8 +5,21 @@ Ingests high-rate structured telemetry over gRPC, keeps a bounded in-memory
 time-series store, and serves queries over HTTP.
 
 **Status: in progress** — config layering, structured JSON logging, gRPC
-streaming ingest, the bounded in-memory store, the HTTP query API and
-liveness/readiness endpoints are in place. Prometheus metrics are next.
+streaming ingest, the bounded in-memory store, the HTTP query API,
+liveness/readiness endpoints and Prometheus metrics are in place.
+Containerisation (Docker + compose + Grafana) is next.
+
+## Observability
+
+`/metrics` exposes Prometheus text format, following the RED method (rate,
+errors, duration) per endpoint:
+
+- `http_requests_total{endpoint,status}` and
+  `http_request_duration_seconds` (histogram — percentiles, not averages)
+- `ingest_streams_total`, `ingest_stream_duration_seconds`
+- `ingest_samples_total{result="accepted|invalid|store_full"}` — the
+  `store_full` label doubles as the dropped-samples counter with reason
+- `store_series`, `store_samples` gauges
 
 ## Query API
 
@@ -49,7 +62,7 @@ loudly at startup and the effective config is logged on boot.
       series, series-count cap, unit tested)
 - [x] HTTP query API (Crow) with bucket-mean downsampling
 - [x] `/healthz` + `/readyz`, readiness-aware graceful drain
-- [ ] Prometheus metrics
+- [x] Prometheus metrics (RED method, histogram durations, store gauges)
 - [ ] Dockerfile + docker-compose stack (Prometheus, Grafana)
 - [ ] Integration tests in CI, load test with published numbers
 

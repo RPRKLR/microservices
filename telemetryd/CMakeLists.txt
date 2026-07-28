@@ -11,6 +11,7 @@ find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 find_package(Crow CONFIG REQUIRED)
+find_package(prometheus-cpp CONFIG REQUIRED)
 
 add_library(telemetry_proto proto/telemetry.proto)
 target_link_libraries(telemetry_proto PUBLIC gRPC::grpc++ protobuf::libprotobuf)
@@ -32,11 +33,13 @@ add_executable(telemetryd
     src/ingest_service.cpp
     src/store.cpp
     src/http_server.cpp
+    src/metrics.cpp
 )
 
 target_link_libraries(telemetryd PRIVATE
     telemetry_proto
     Crow::Crow
+    prometheus-cpp::core
     spdlog::spdlog
     tomlplusplus::tomlplusplus
 )
@@ -48,12 +51,15 @@ enable_testing()
 add_executable(unit_tests
     tests/store_test.cpp
     tests/config_test.cpp
+    tests/metrics_test.cpp
     src/store.cpp
     src/config.cpp
+    src/metrics.cpp
 )
 target_include_directories(unit_tests PRIVATE src)
 target_link_libraries(unit_tests PRIVATE
     GTest::gtest_main
+    prometheus-cpp::core
     spdlog::spdlog
     tomlplusplus::tomlplusplus
 )

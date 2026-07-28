@@ -79,6 +79,16 @@ std::size_t Store::series_count() const {
     return series_.size();
 }
 
+std::size_t Store::total_samples() const {
+    std::shared_lock lock(map_mu_);
+    std::size_t n = 0;
+    for (const auto& [k, s] : series_) {
+        std::lock_guard series_lock(s->mu);
+        n += s->size;
+    }
+    return n;
+}
+
 std::vector<SamplePoint> downsample(const std::vector<SamplePoint>& in, std::size_t max_points) {
     if (max_points == 0 || in.size() <= max_points) {
         return in;

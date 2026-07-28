@@ -13,6 +13,7 @@
 #include "http_server.hpp"
 #include "ingest_service.hpp"
 #include "logging.hpp"
+#include "metrics.hpp"
 #include "store.hpp"
 
 namespace {
@@ -52,7 +53,8 @@ int main(int argc, char* argv[]) {
     telemetryd::Store store({static_cast<std::size_t>(cfg.store_max_series),
                              static_cast<std::size_t>(cfg.store_max_samples_per_series),
                              cfg.store_retention_seconds * 1000});
-    telemetryd::IngestServiceImpl ingest_service(store);
+    telemetryd::Metrics metrics;
+    telemetryd::IngestServiceImpl ingest_service(store, metrics);
 
     grpc::ServerBuilder builder;
     const auto addr = fmt::format("0.0.0.0:{}", cfg.grpc_port);
@@ -67,7 +69,7 @@ int main(int argc, char* argv[]) {
     spdlog::info("gRPC ingest listening on {}", addr);
 
     std::atomic<bool> ready{false};
-    telemetryd::HttpServer http_server(cfg.http_port, store, ready);
+    telemetryd::HttpServer http_server(cfg.http_port, store, ready, metrics);
     http_server.start();
     ready.store(true);
 

@@ -35,6 +35,7 @@ public:
                                    std::int64_t from_ms, std::int64_t to_ms) const;
 
     std::size_t series_count() const;
+    std::size_t total_samples() const;
 
 private:
     struct Series {

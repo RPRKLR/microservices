@@ -5,6 +5,7 @@
     "crow",
     "grpc",
     "gtest",
+    "prometheus-cpp",
     "protobuf",
     "spdlog",
     "tomlplusplus"
